@@ -6,7 +6,6 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
    Color: Orange / Green / White — Bridgefund-inspired minimal style
    ═══════════════════════════════════════════════════════════════════════ */
 
-// ─── Design System ────────────────────────────────────────────────────
 const C = {
   orange: "#FF6B2C",
   orangeDark: "#E5551A",
@@ -34,16 +33,16 @@ const SH = {
 };
 const F = "'Plus Jakarta Sans', sans-serif";
 
-// ─── Router ───────────────────────────────────────────────────────────
-const Ctx = createContext({ page: "home", go: () => {}, formData: {}, setFormData: () => {} });
+const Ctx = createContext({ page: "home", go: () => {} });
 function useNav() { return useContext(Ctx); }
 
-// ─── Animations ───────────────────────────────────────────────────────
+// Simple shared loan config (no context re-render needed)
+const LOAN = { amount: 75000, term: 60 };
+
 const fadeUp = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-50px" }, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } };
 const stagger = { initial: "h", whileInView: "s", viewport: { once: true, margin: "-40px" }, variants: { h: {}, s: { transition: { staggerChildren: 0.07 } } } };
 const stChild = { variants: { h: { opacity: 0, y: 22 }, s: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } } } };
 
-// ─── CountUp ──────────────────────────────────────────────────────────
 function CountUp({ target, suffix = "", prefix = "" }) {
   const [v, setV] = useState(0);
   const ref = useRef(null);
@@ -57,7 +56,6 @@ function CountUp({ target, suffix = "", prefix = "" }) {
   return <span ref={ref}>{prefix}{v.toLocaleString("nl-NL")}{suffix}</span>;
 }
 
-// ─── UI Primitives ────────────────────────────────────────────────────
 function Btn({ children, onClick, variant = "primary", size = "md", full, style = {}, disabled }) {
   const styles = {
     primary: { background: C.orange, color: "#fff", boxShadow: SH.glow },
@@ -99,6 +97,67 @@ function Select({ label, options, value, onChange, required }) {
   );
 }
 
+function DateInput({ label, value, onChange, required, min, max }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      {label && <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>{label}{required && <span style={{ color: C.orange }}> *</span>}</label>}
+      <div style={{ position: "relative" }}>
+        <input type="date" value={value} onChange={onChange} min={min} max={max}
+          style={{ width: "100%", padding: "14px 18px", borderRadius: R.md, border: `1.5px solid ${C.border}`, fontSize: 15, fontFamily: F, color: value ? C.text : C.textTer, background: C.white, outline: "none", transition: "all 0.2s", boxSizing: "border-box", cursor: "pointer" }}
+          onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}
+          onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FileUpload({ label, accept, file, onFileChange, hint }) {
+  const [dragOver, setDragOver] = useState(false);
+  const inputRef = useRef(null);
+  const handleDrop = (e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files?.[0]) onFileChange(e.dataTransfer.files[0]); };
+  return (
+    <div style={{ marginBottom: 18 }}>
+      {label && <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>{label}</label>}
+      <div
+        onClick={() => inputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        style={{
+          border: `2px dashed ${file ? C.green : dragOver ? C.orange : C.border}`,
+          borderRadius: R.lg, padding: file ? "16px 20px" : "28px 20px",
+          textAlign: "center", cursor: "pointer", transition: "all 0.2s",
+          background: file ? C.greenLight : dragOver ? C.orangeLight : C.white,
+        }}
+      >
+        <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }}
+          onChange={e => { if (e.target.files?.[0]) onFileChange(e.target.files[0]); }} />
+        {file ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: C.green, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 18, flexShrink: 0 }}>📄</div>
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontFamily: F, fontWeight: 600, fontSize: 14, color: C.text, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</div>
+                <div style={{ fontFamily: F, fontSize: 12, color: C.green, fontWeight: 500 }}>{(file.size / 1024).toFixed(0)} KB · Geüpload ✓</div>
+              </div>
+            </div>
+            <motion.div whileHover={{ scale: 1.1 }} onClick={e => { e.stopPropagation(); onFileChange(null); }}
+              style={{ width: 28, height: 28, borderRadius: 8, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: "#E53E3E" }}>✕</motion.div>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.6 }}>📁</div>
+            <div style={{ fontFamily: F, fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 4 }}>Sleep je bestand hierheen</div>
+            <div style={{ fontFamily: F, fontSize: 13, color: C.textTer }}>of <span style={{ color: C.orange, fontWeight: 600 }}>klik om te selecteren</span></div>
+            {hint && <div style={{ fontFamily: F, fontSize: 11, color: C.textTer, marginTop: 8 }}>{hint}</div>}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Card({ children, style = {}, hover = true }) {
   return (
     <motion.div whileHover={hover ? { y: -3, boxShadow: SH.lg } : {}} transition={{ duration: 0.2 }}
@@ -111,7 +170,6 @@ function Card({ children, style = {}, hover = true }) {
 function Container({ children, style = {} }) { return <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px", ...style }}>{children}</div>; }
 function Section({ children, bg = "transparent", style = {} }) { return <section style={{ padding: "80px 0", background: bg, position: "relative", overflow: "hidden", ...style }}>{children}</section>; }
 
-// ─── Navbar ───────────────────────────────────────────────────────────
 function Navbar() {
   const { page, go } = useNav();
   const [scrolled, setScrolled] = useState(false);
@@ -144,7 +202,6 @@ function Navbar() {
   );
 }
 
-// ─── Footer ───────────────────────────────────────────────────────────
 function Footer() {
   const { go } = useNav();
   return (
@@ -183,19 +240,18 @@ function Footer() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
 //  HOME PAGE
-// ═══════════════════════════════════════════════════════════════════════
 function HomePage() {
   const { go } = useNav();
-  const [amount, setAmount] = useState(75000);
-  const [term, setTerm] = useState(60);
+  const [amount, setAmount] = useState(LOAN.amount);
+  const [term, setTerm] = useState(LOAN.term);
   const min = 5000, max = 500000, tMin = 12, tMax = 120;
   const pct = ((amount - min) / (max - min)) * 100;
   const tPct = ((term - tMin) / (tMax - tMin)) * 100;
   const monthly = Math.round(amount / term * 1.05);
   const fmt = v => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", minimumFractionDigits: 0 }).format(v);
   const loanType = amount <= 50000 ? "Microkrediet" : amount <= 250000 ? "MKB Krediet" : "MKB Krediet+";
+  const goAanvragen = () => { LOAN.amount = amount; LOAN.term = term; go("aanvragen"); };
 
   return (
     <>
@@ -226,7 +282,7 @@ function HomePage() {
                 ))}
               </div>
               <div style={{ display: "flex", gap: 10 }}>
-                <Btn size="lg" onClick={() => go("aanvragen")}>Krediet aanvragen →</Btn>
+                <Btn size="lg" onClick={goAanvragen}>Krediet aanvragen →</Btn>
                 <Btn variant="outline" size="lg" onClick={() => go("hoe-het-werkt")}>Hoe het werkt</Btn>
               </div>
               <p style={{ fontFamily: F, fontSize: 12, color: C.textTer, marginTop: 12 }}>Geheel vrijblijvend en kosteloos</p>
@@ -277,7 +333,7 @@ function HomePage() {
                   <span style={{ fontFamily: F, fontWeight: 900, fontSize: 24, color: C.orange, letterSpacing: "-0.02em" }}>{fmt(monthly)}<span style={{ fontSize: 14, fontWeight: 500, color: C.textTer }}>/mnd</span></span>
                 </div>
 
-                <Btn full size="lg" onClick={() => go("aanvragen")}>Vraag dit krediet aan →</Btn>
+                <Btn full size="lg" onClick={goAanvragen}>Vraag dit krediet aan →</Btn>
                 <p style={{ fontFamily: F, fontSize: 11, color: C.textTer, textAlign: "center", marginTop: 10 }}>Vrijblijvend · Geen verplichtingen · Binnen 2 werkdagen reactie</p>
               </Card>
             </motion.div>
@@ -324,7 +380,7 @@ function HomePage() {
                   </div>
                   <div style={{ padding: "18px 28px 24px" }}>
                     {p.features.map(f => <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontFamily: F, fontSize: 14, color: C.textSec }}><span style={{ color: C.green, fontWeight: 700 }}>✓</span>{f}</div>)}
-                    <Btn variant="outline" full onClick={() => go("aanvragen")} style={{ marginTop: 14, borderColor: p.color, color: p.color }}>Aanvragen →</Btn>
+                    <Btn variant="outline" full onClick={goAanvragen} style={{ marginTop: 14, borderColor: p.color, color: p.color }}>Aanvragen →</Btn>
                   </div>
                 </Card>
               </motion.div>
@@ -366,7 +422,7 @@ function HomePage() {
             <Card style={{ padding: "52px 40px", textAlign: "center", background: `linear-gradient(135deg, ${C.orangeLight}80, ${C.greenLight}40)`, border: `1px solid ${C.orange}15` }} hover={false}>
               <h2 style={{ fontFamily: F, fontWeight: 900, fontSize: 32, color: C.text, letterSpacing: "-0.03em", margin: "0 0 12px" }}>Klaar om te groeien?</h2>
               <p style={{ fontFamily: F, fontSize: 16, color: C.textSec, margin: "0 0 28px", maxWidth: 440, marginInline: "auto" }}>Vraag vrijblijvend krediet aan. Binnen 2 werkdagen weet je waar je aan toe bent.</p>
-              <Btn size="lg" onClick={() => go("aanvragen")}>Start je aanvraag →</Btn>
+              <Btn size="lg" onClick={goAanvragen}>Start je aanvraag →</Btn>
             </Card>
           </motion.div>
         </Container>
@@ -375,22 +431,122 @@ function HomePage() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
+const KVK_DB = {
+  "12345678": { handelsnaam: "BrewStamp B.V.", rechtsvorm: "bv", vestigingsplaats: "Amsterdam", sbiCode: "6201 - Ontwikkelen en produceren van software", startdatum: "2023-03-15", sector: "tech", actief: true },
+  "23456789": { handelsnaam: "Café Simit", rechtsvorm: "eenmanszaak", vestigingsplaats: "Rotterdam", sbiCode: "5610 - Restaurants", startdatum: "2021-09-01", sector: "horeca", actief: true },
+  "34567890": { handelsnaam: "TechFlow Solutions B.V.", rechtsvorm: "bv", vestigingsplaats: "Utrecht", sbiCode: "6202 - Advisering op het gebied van IT", startdatum: "2019-06-22", sector: "tech", actief: true },
+  "45678901": { handelsnaam: "Studio Bloem Amsterdam", rechtsvorm: "eenmanszaak", vestigingsplaats: "Amsterdam", sbiCode: "4776 - Winkels in bloemen en planten", startdatum: "2022-01-10", sector: "retail", actief: true },
+  "56789012": { handelsnaam: "Van der Berg Transport VOF", rechtsvorm: "vof", vestigingsplaats: "Eindhoven", sbiCode: "4941 - Goederenvervoer over de weg", startdatum: "2017-04-05", sector: "transport", actief: true },
+  "67890123": { handelsnaam: "Bouwkracht Jansen B.V.", rechtsvorm: "bv", vestigingsplaats: "Den Haag", sbiCode: "4120 - Algemene burgerlijke en utiliteitsbouw", startdatum: "2015-11-12", sector: "bouw", actief: true },
+  "78901234": { handelsnaam: "ZorgPunt Plus", rechtsvorm: "stichting", vestigingsplaats: "Groningen", sbiCode: "8810 - Maatschappelijke dienstverlening zonder huisvesting", startdatum: "2020-07-03", sector: "zorg", actief: true },
+  "89012345": { handelsnaam: "De Gouden Lepel", rechtsvorm: "vof", vestigingsplaats: "Maastricht", sbiCode: "5610 - Restaurants", startdatum: "2018-02-28", sector: "horeca", actief: true },
+};
+
+const POSTCODE_DB = {
+  "1017BZ": { straat: "Herengracht", plaats: "Amsterdam" },
+  "1012JS": { straat: "Damrak", plaats: "Amsterdam" },
+  "1016EA": { straat: "Keizersgracht", plaats: "Amsterdam" },
+  "1071DJ": { straat: "Museumplein", plaats: "Amsterdam" },
+  "1011AC": { straat: "Prins Hendrikkade", plaats: "Amsterdam" },
+  "3011AA": { straat: "Coolsingel", plaats: "Rotterdam" },
+  "3012KL": { straat: "Witte de Withstraat", plaats: "Rotterdam" },
+  "3511BH": { straat: "Oudegracht", plaats: "Utrecht" },
+  "3512JC": { straat: "Domplein", plaats: "Utrecht" },
+  "2511AB": { straat: "Spui", plaats: "Den Haag" },
+  "2514JR": { straat: "Lange Voorhout", plaats: "Den Haag" },
+  "5611DE": { straat: "Stratumseind", plaats: "Eindhoven" },
+  "6211CK": { straat: "Markt", plaats: "Maastricht" },
+  "9711JB": { straat: "Grote Markt", plaats: "Groningen" },
+  "7511JL": { straat: "Oude Markt", plaats: "Enschede" },
+  "5038EA": { straat: "Heuvel", plaats: "Tilburg" },
+  "4811XS": { straat: "Grote Markt", plaats: "Breda" },
+  "1506MA": { straat: "Zaanweg", plaats: "Zaandam" },
+};
+
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+const formatPostcode = (v) => {
+  const clean = v.replace(/\s/g, "").toUpperCase();
+  if (clean.length <= 4) return clean.replace(/[^0-9]/g, "");
+  return clean.slice(0, 4).replace(/[^0-9]/g, "") + " " + clean.slice(4).replace(/[^A-Z]/g, "").slice(0, 2);
+};
+
 //  AANVRAGEN PAGE (Qredits Application Form)
-// ═══════════════════════════════════════════════════════════════════════
 function AanvragenPage() {
   const { go } = useNav();
   const [step, setStep] = useState(0);
   const [agreed, setAgreed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [kvkStatus, setKvkStatus] = useState("idle"); // idle | searching | found | notfound
+  const [kvkData, setKvkData] = useState(null);
+  const [businessCaseFile, setBusinessCaseFile] = useState(null);
+  const [jaarcijfersFile, setJaarcijfersFile] = useState(null);
+  const [financieelPlanFile, setFinancieelPlanFile] = useState(null);
+  const [postcodeStatus, setPostcodeStatus] = useState("idle"); // idle | searching | found | notfound
+  const [emailValid, setEmailValid] = useState(null); // null | true | false
 
   const [form, setForm] = useState({
-    bedrag: "75000", looptijd: "60", doel: "", kvk: "", bedrijfsnaam: "", rechtsvorm: "", startdatum: "", sector: "",
+    bedrag: String(LOAN.amount), looptijd: String(LOAN.term), doel: "", kvk: "", bedrijfsnaam: "", rechtsvorm: "", startdatum: "", sector: "", businessCase: "",
     voornaam: "", achternaam: "", email: "", telefoon: "", geboortedatum: "", bsn: "",
     straat: "", huisnummer: "", postcode: "", plaats: "",
-    ondernemingsplan: false, jaarcijfers: false, financieelPlan: false,
   });
   const u = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  // Auto KVK lookup when 8 digits entered
+  useEffect(() => {
+    const clean = form.kvk.replace(/\D/g, "");
+    if (clean.length === 8) {
+      setKvkStatus("searching");
+      setKvkData(null);
+      const timer = setTimeout(() => {
+        const match = KVK_DB[clean];
+        if (match) {
+          setKvkStatus("found");
+          setKvkData(match);
+          setForm(p => ({
+            ...p,
+            bedrijfsnaam: match.handelsnaam,
+            rechtsvorm: match.rechtsvorm,
+            startdatum: match.startdatum,
+            sector: match.sector,
+          }));
+        } else {
+          setKvkStatus("notfound");
+          setKvkData(null);
+        }
+      }, 1200); // Simulate API delay
+      return () => clearTimeout(timer);
+    } else {
+      setKvkStatus("idle");
+      setKvkData(null);
+    }
+  }, [form.kvk]);
+
+  // Auto postcode lookup
+  useEffect(() => {
+    const clean = form.postcode.replace(/\s/g, "").toUpperCase();
+    if (/^[0-9]{4}[A-Z]{2}$/.test(clean)) {
+      setPostcodeStatus("searching");
+      const timer = setTimeout(() => {
+        const match = POSTCODE_DB[clean];
+        if (match) {
+          setPostcodeStatus("found");
+          setForm(p => ({ ...p, straat: match.straat, plaats: match.plaats }));
+        } else {
+          setPostcodeStatus("notfound");
+        }
+      }, 800);
+      return () => clearTimeout(timer);
+    } else {
+      setPostcodeStatus("idle");
+    }
+  }, [form.postcode]);
+
+  // Email validation
+  useEffect(() => {
+    if (!form.email) { setEmailValid(null); return; }
+    const timer = setTimeout(() => setEmailValid(isValidEmail(form.email)), 500);
+    return () => clearTimeout(timer);
+  }, [form.email]);
 
   if (submitted) {
     return (
@@ -414,7 +570,7 @@ function AanvragenPage() {
     );
   }
 
-  const steps = ["Kredietgegevens", "Bedrijfsgegevens", "Persoonlijke gegevens", "Documenten & Akkoord"];
+  const steps = ["Kredietgegevens", "Bedrijfsgegevens", "Persoonlijke gegevens", "Business Case & Documenten"];
 
   return (
     <Section style={{ paddingTop: 130, paddingBottom: 40, background: `linear-gradient(180deg, ${C.orangeLight}40, ${C.white})` }}>
@@ -441,8 +597,26 @@ function AanvragenPage() {
                 {step === 0 && (
                   <>
                     <h3 style={{ fontFamily: F, fontWeight: 700, fontSize: 18, color: C.text, marginBottom: 20 }}>Kredietgegevens</h3>
-                    <Input label="Gewenst kredietbedrag (€)" placeholder="Bijv. 75000" type="number" value={form.bedrag} onChange={e => u("bedrag", e.target.value)} required />
-                    <Input label="Gewenste looptijd (maanden)" placeholder="12 - 120" type="number" value={form.looptijd} onChange={e => u("looptijd", e.target.value)} required />
+                    <div style={{ marginBottom: 18 }}>
+                      <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>Gewenst kredietbedrag (€) <span style={{ color: C.orange }}>*</span></label>
+                      <input type="text" inputMode="numeric" placeholder="Bijv. 75000" value={form.bedrag}
+                        onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 7); u("bedrag", v); }}
+                        style={{ width: "100%", padding: "14px 18px", borderRadius: R.md, border: `1.5px solid ${C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: C.white, outline: "none", boxSizing: "border-box", letterSpacing: "0.02em" }}
+                        onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}
+                        onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+                      />
+                      <span style={{ fontFamily: F, fontSize: 11, color: C.textTer, marginTop: 4, display: "block" }}>Minimaal €5.000 · Maximaal €500.000 · Alleen cijfers</span>
+                    </div>
+                    <div style={{ marginBottom: 18 }}>
+                      <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>Gewenste looptijd (maanden) <span style={{ color: C.orange }}>*</span></label>
+                      <input type="text" inputMode="numeric" placeholder="12 - 120" value={form.looptijd}
+                        onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 3); u("looptijd", v); }}
+                        style={{ width: "100%", padding: "14px 18px", borderRadius: R.md, border: `1.5px solid ${C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: C.white, outline: "none", boxSizing: "border-box" }}
+                        onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}
+                        onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+                      />
+                      <span style={{ fontFamily: F, fontSize: 11, color: C.textTer, marginTop: 4, display: "block" }}>12 tot 120 maanden · Alleen cijfers</span>
+                    </div>
                     <Select label="Doel van het krediet" value={form.doel} onChange={e => u("doel", e.target.value)} required options={[
                       { value: "", label: "Selecteer een doel..." }, { value: "werkkapitaal", label: "Werkkapitaal" }, { value: "inventaris", label: "Inventaris & apparatuur" },
                       { value: "verbouwing", label: "Verbouwing" }, { value: "overname", label: "Bedrijfsovername" }, { value: "marketing", label: "Marketing & groei" },
@@ -453,14 +627,94 @@ function AanvragenPage() {
                 {step === 1 && (
                   <>
                     <h3 style={{ fontFamily: F, fontWeight: 700, fontSize: 18, color: C.text, marginBottom: 20 }}>Bedrijfsgegevens</h3>
-                    <Input label="KVK-nummer" placeholder="8-cijferig KVK-nummer" value={form.kvk} onChange={e => u("kvk", e.target.value)} required />
-                    <Input label="Bedrijfsnaam (handelsnaam)" placeholder="Naam van je bedrijf" value={form.bedrijfsnaam} onChange={e => u("bedrijfsnaam", e.target.value)} required />
+                    
+                    {/* KVK Input with auto-lookup */}
+                    <div style={{ marginBottom: 18 }}>
+                      <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>KVK-nummer <span style={{ color: C.orange }}>*</span></label>
+                      <div style={{ position: "relative" }}>
+                        <input type="text" placeholder="Voer 8-cijferig KVK-nummer in" value={form.kvk} maxLength={8}
+                          onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 8); u("kvk", v); }}
+                          style={{ width: "100%", padding: "14px 18px", paddingRight: 48, borderRadius: R.md, border: `1.5px solid ${kvkStatus === "found" ? C.green : kvkStatus === "notfound" ? "#E53E3E" : C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: C.white, outline: "none", transition: "all 0.2s", boxSizing: "border-box", letterSpacing: "0.1em", fontWeight: 600 }}
+                          onFocus={e => { if (kvkStatus === "idle") { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}}
+                          onBlur={e => { if (kvkStatus === "idle") { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}}
+                        />
+                        <div style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)" }}>
+                          {kvkStatus === "searching" && (
+                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                              style={{ width: 20, height: 20, border: `2.5px solid ${C.borderLight}`, borderTopColor: C.orange, borderRadius: 99 }} />
+                          )}
+                          {kvkStatus === "found" && <span style={{ color: C.green, fontSize: 20 }}>✓</span>}
+                          {kvkStatus === "notfound" && <span style={{ color: "#E53E3E", fontSize: 18 }}>✕</span>}
+                        </div>
+                      </div>
+                      <div style={{ fontFamily: F, fontSize: 11, color: C.textTer, marginTop: 5 }}>
+                        {kvkStatus === "idle" && form.kvk.length > 0 && `${8 - form.kvk.length} cijfer(s) resterend`}
+                        {kvkStatus === "idle" && form.kvk.length === 0 && "Demo KVK-nummers: 12345678, 23456789, 34567890, 45678901"}
+                        {kvkStatus === "searching" && <span style={{ color: C.orange }}>Bedrijf opzoeken via KVK Handelsregister...</span>}
+                        {kvkStatus === "notfound" && <span style={{ color: "#E53E3E" }}>Geen bedrijf gevonden met dit KVK-nummer. Controleer het nummer en probeer opnieuw.</span>}
+                      </div>
+                    </div>
+
+                    {/* Skeleton loading state */}
+                    {kvkStatus === "searching" && (
+                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ borderRadius: R.lg, border: `1.5px dashed ${C.border}`, padding: 24, marginBottom: 18 }}>
+                        {[140, 200, 120, 180].map((w, i) => (
+                          <div key={i} style={{ display: "flex", gap: 12, marginBottom: i < 3 ? 14 : 0 }}>
+                            <motion.div animate={{ opacity: [0.15, 0.3, 0.15] }} transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.1 }}
+                              style={{ width: 80, height: 14, borderRadius: 6, background: C.borderLight }} />
+                            <motion.div animate={{ opacity: [0.15, 0.3, 0.15] }} transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.1 + 0.05 }}
+                              style={{ width: w, height: 14, borderRadius: 6, background: C.borderLight }} />
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+
+                    {/* Company found card */}
+                    {kvkStatus === "found" && kvkData && (
+                      <motion.div initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                        style={{ borderRadius: R.lg, border: `1.5px solid ${C.green}30`, background: `linear-gradient(135deg, ${C.greenLight}, ${C.white})`, padding: 24, marginBottom: 18 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, delay: 0.15 }}
+                              style={{ width: 36, height: 36, borderRadius: 10, background: C.green, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 16, fontWeight: 700 }}>✓</motion.div>
+                            <div>
+                              <div style={{ fontFamily: F, fontWeight: 800, fontSize: 16, color: C.text }}>{kvkData.handelsnaam}</div>
+                              <div style={{ fontFamily: F, fontSize: 12, color: C.green, fontWeight: 600 }}>Bedrijf gevonden in Handelsregister</div>
+                            </div>
+                          </div>
+                          <span style={{ background: kvkData.actief ? C.greenLight : "#FEE2E2", color: kvkData.actief ? C.green : "#E53E3E", borderRadius: R.full, padding: "4px 12px", fontSize: 11, fontWeight: 700, fontFamily: F }}>
+                            {kvkData.actief ? "● Actief" : "● Inactief"}
+                          </span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                          {[
+                            { l: "KVK-nummer", v: form.kvk },
+                            { l: "Rechtsvorm", v: kvkData.rechtsvorm === "bv" ? "Besloten Vennootschap (B.V.)" : kvkData.rechtsvorm === "vof" ? "Vennootschap onder firma (VOF)" : kvkData.rechtsvorm === "eenmanszaak" ? "Eenmanszaak" : kvkData.rechtsvorm === "stichting" ? "Stichting" : kvkData.rechtsvorm },
+                            { l: "Vestigingsplaats", v: kvkData.vestigingsplaats },
+                            { l: "Startdatum", v: kvkData.startdatum ? new Date(kvkData.startdatum).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }) : "-" },
+                            { l: "SBI-code", v: kvkData.sbiCode, span: true },
+                          ].map(item => (
+                            <div key={item.l} style={{ gridColumn: item.span ? "1 / -1" : "auto" }}>
+                              <div style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: C.textTer, textTransform: "uppercase", letterSpacing: "0.06em" }}>{item.l}</div>
+                              <div style={{ fontFamily: F, fontSize: 14, fontWeight: 600, color: C.text, marginTop: 2 }}>{item.v}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ marginTop: 14, padding: "10px 14px", borderRadius: R.sm, background: `${C.orange}08`, border: `1px solid ${C.orange}15` }}>
+                          <span style={{ fontFamily: F, fontSize: 12, color: C.orange, fontWeight: 600 }}>ℹ️ Gegevens automatisch ingevuld op basis van KVK-registratie</span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Remaining fields - some auto-filled */}
+                    <Input label="Bedrijfsnaam (handelsnaam)" placeholder="Naam van je bedrijf" value={form.bedrijfsnaam} onChange={e => u("bedrijfsnaam", e.target.value)} required
+                      style={{ opacity: kvkStatus === "found" ? 0.7 : 1 }} />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <Select label="Rechtsvorm" value={form.rechtsvorm} onChange={e => u("rechtsvorm", e.target.value)} required options={[
                         { value: "", label: "Selecteer..." }, { value: "eenmanszaak", label: "Eenmanszaak" }, { value: "vof", label: "VOF" },
                         { value: "bv", label: "B.V." }, { value: "stichting", label: "Stichting" }, { value: "cv", label: "C.V." },
                       ]} />
-                      <Input label="Startdatum bedrijf" placeholder="DD-MM-JJJJ" value={form.startdatum} onChange={e => u("startdatum", e.target.value)} required />
+                      <DateInput label="Startdatum bedrijf" value={form.startdatum} onChange={e => u("startdatum", e.target.value)} required max="2026-03-05" min="1950-01-01" />
                     </div>
                     <Select label="Sector / Branche" value={form.sector} onChange={e => u("sector", e.target.value)} required options={[
                       { value: "", label: "Selecteer je sector..." }, { value: "horeca", label: "Horeca" }, { value: "retail", label: "Retail & detailhandel" },
@@ -476,39 +730,196 @@ function AanvragenPage() {
                       <Input label="Voornaam" placeholder="Je voornaam" value={form.voornaam} onChange={e => u("voornaam", e.target.value)} required />
                       <Input label="Achternaam" placeholder="Je achternaam" value={form.achternaam} onChange={e => u("achternaam", e.target.value)} required />
                     </div>
+
+                    {/* Email with validation */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                      <Input label="E-mailadres" placeholder="naam@bedrijf.nl" type="email" value={form.email} onChange={e => u("email", e.target.value)} required />
-                      <Input label="Telefoonnummer" placeholder="+31 6 ..." type="tel" value={form.telefoon} onChange={e => u("telefoon", e.target.value)} required />
+                      <div style={{ marginBottom: 18 }}>
+                        <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>E-mailadres <span style={{ color: C.orange }}>*</span></label>
+                        <div style={{ position: "relative" }}>
+                          <input type="email" placeholder="naam@bedrijf.nl" value={form.email}
+                            onChange={e => u("email", e.target.value)}
+                            style={{ width: "100%", padding: "14px 18px", paddingRight: 40, borderRadius: R.md, border: `1.5px solid ${emailValid === true ? C.green : emailValid === false ? "#E53E3E" : C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: C.white, outline: "none", boxSizing: "border-box", transition: "all 0.2s" }}
+                            onFocus={e => { if (emailValid === null) { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}}
+                            onBlur={e => { if (emailValid === null) { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}}
+                          />
+                          {emailValid !== null && (
+                            <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: emailValid ? C.green : "#E53E3E" }}>
+                              {emailValid ? "✓" : "✕"}
+                            </span>
+                          )}
+                        </div>
+                        {emailValid === false && <span style={{ fontFamily: F, fontSize: 11, color: "#E53E3E", marginTop: 3, display: "block" }}>Ongeldig e-mailformaat</span>}
+                      </div>
+
+                      {/* Phone - digits only, max 10 */}
+                      <div style={{ marginBottom: 18 }}>
+                        <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>Telefoonnummer <span style={{ color: C.orange }}>*</span></label>
+                        <input type="text" inputMode="numeric" placeholder="06 12345678" value={form.telefoon}
+                          onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); u("telefoon", v); }}
+                          style={{ width: "100%", padding: "14px 18px", borderRadius: R.md, border: `1.5px solid ${C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: C.white, outline: "none", boxSizing: "border-box", letterSpacing: "0.05em" }}
+                          onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}
+                          onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+                        />
+                        <span style={{ fontFamily: F, fontSize: 11, color: C.textTer, marginTop: 3, display: "block" }}>10 cijfers · {form.telefoon.length}/10</span>
+                      </div>
                     </div>
+
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                      <Input label="Geboortedatum" placeholder="DD-MM-JJJJ" value={form.geboortedatum} onChange={e => u("geboortedatum", e.target.value)} required />
-                      <Input label="BSN (vertrouwelijk)" placeholder="9 cijfers" value={form.bsn} onChange={e => u("bsn", e.target.value)} required />
+                      <DateInput label="Geboortedatum" value={form.geboortedatum} onChange={e => u("geboortedatum", e.target.value)} required max="2008-01-01" min="1940-01-01" />
+
+                      {/* BSN - digits only, exactly 9 */}
+                      <div style={{ marginBottom: 18 }}>
+                        <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>BSN (vertrouwelijk) <span style={{ color: C.orange }}>*</span></label>
+                        <div style={{ position: "relative" }}>
+                          <input type="text" inputMode="numeric" placeholder="123456789" value={form.bsn}
+                            onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 9); u("bsn", v); }}
+                            style={{ width: "100%", padding: "14px 18px", paddingRight: 40, borderRadius: R.md, border: `1.5px solid ${form.bsn.length === 9 ? C.green : C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: C.white, outline: "none", boxSizing: "border-box", letterSpacing: "0.1em", transition: "all 0.2s" }}
+                            onFocus={e => { if (form.bsn.length < 9) { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}}
+                            onBlur={e => { if (form.bsn.length < 9) { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}}
+                          />
+                          {form.bsn.length === 9 && <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: C.green, fontSize: 16 }}>✓</span>}
+                        </div>
+                        <span style={{ fontFamily: F, fontSize: 11, color: form.bsn.length === 9 ? C.green : C.textTer, marginTop: 3, display: "block" }}>9 cijfers · {form.bsn.length}/9 {form.bsn.length === 9 && "✓"}</span>
+                      </div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
-                      <Input label="Straat" placeholder="Straatnaam" value={form.straat} onChange={e => u("straat", e.target.value)} required />
-                      <Input label="Huisnr." placeholder="Nr." value={form.huisnummer} onChange={e => u("huisnummer", e.target.value)} required />
+
+                    {/* Postcode with auto-lookup → Straat & Plaats */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.6fr", gap: 12 }}>
+                      <div style={{ marginBottom: 18 }}>
+                        <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>Postcode <span style={{ color: C.orange }}>*</span></label>
+                        <div style={{ position: "relative" }}>
+                          <input type="text" placeholder="1234 AB" value={form.postcode}
+                            onChange={e => { const v = formatPostcode(e.target.value).slice(0, 7); u("postcode", v); }}
+                            maxLength={7}
+                            style={{ width: "100%", padding: "14px 18px", paddingRight: 40, borderRadius: R.md, border: `1.5px solid ${postcodeStatus === "found" ? C.green : postcodeStatus === "notfound" ? "#E53E3E" : C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: C.white, outline: "none", boxSizing: "border-box", letterSpacing: "0.08em", textTransform: "uppercase", transition: "all 0.2s" }}
+                            onFocus={e => { if (postcodeStatus === "idle") { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}}
+                            onBlur={e => { if (postcodeStatus === "idle") { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}}
+                          />
+                          <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                            {postcodeStatus === "searching" && (
+                              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                                style={{ width: 16, height: 16, border: `2px solid ${C.borderLight}`, borderTopColor: C.orange, borderRadius: 99 }} />
+                            )}
+                            {postcodeStatus === "found" && <span style={{ color: C.green, fontSize: 16 }}>✓</span>}
+                            {postcodeStatus === "notfound" && <span style={{ color: "#E53E3E", fontSize: 14 }}>✕</span>}
+                          </div>
+                        </div>
+                        {postcodeStatus === "searching" && <span style={{ fontFamily: F, fontSize: 11, color: C.orange, marginTop: 3, display: "block" }}>Adres opzoeken...</span>}
+                        {postcodeStatus === "found" && <span style={{ fontFamily: F, fontSize: 11, color: C.green, marginTop: 3, display: "block" }}>Adres gevonden ✓</span>}
+                        {postcodeStatus === "notfound" && <span style={{ fontFamily: F, fontSize: 11, color: "#E53E3E", marginTop: 3, display: "block" }}>Postcode niet gevonden</span>}
+                        {postcodeStatus === "idle" && <span style={{ fontFamily: F, fontSize: 11, color: C.textTer, marginTop: 3, display: "block" }}>Formaat: 1234 AB · Demo: 1017 BZ, 3011 AA</span>}
+                      </div>
+
+                      <div style={{ marginBottom: 18 }}>
+                        <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>Straat {postcodeStatus === "found" && <span style={{ color: C.green, fontSize: 10 }}>AUTO</span>}</label>
+                        <input type="text" placeholder="Straatnaam" value={form.straat} onChange={e => u("straat", e.target.value)}
+                          style={{ width: "100%", padding: "14px 18px", borderRadius: R.md, border: `1.5px solid ${postcodeStatus === "found" ? C.green + "60" : C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: postcodeStatus === "found" ? C.greenLight : C.white, outline: "none", boxSizing: "border-box", transition: "all 0.2s" }}
+                          onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}
+                          onBlur={e => { e.target.style.borderColor = postcodeStatus === "found" ? C.green + "60" : C.border; e.target.style.boxShadow = "none"; }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: 18 }}>
+                        <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>Huisnr. <span style={{ color: C.orange }}>*</span></label>
+                        <input type="text" inputMode="numeric" placeholder="Nr." value={form.huisnummer}
+                          onChange={e => { const v = e.target.value.replace(/[^0-9a-zA-Z\-]/g, "").slice(0, 6); u("huisnummer", v); }}
+                          style={{ width: "100%", padding: "14px 18px", borderRadius: R.md, border: `1.5px solid ${C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: C.white, outline: "none", boxSizing: "border-box" }}
+                          onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}
+                          onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+                        />
+                      </div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                      <Input label="Postcode" placeholder="1234 AB" value={form.postcode} onChange={e => u("postcode", e.target.value)} required />
-                      <Input label="Plaats" placeholder="Amsterdam" value={form.plaats} onChange={e => u("plaats", e.target.value)} required />
+
+                    <div style={{ marginBottom: 18 }}>
+                      <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>Plaats {postcodeStatus === "found" && <span style={{ color: C.green, fontSize: 10 }}>AUTO</span>}</label>
+                      <input type="text" placeholder="Amsterdam" value={form.plaats} onChange={e => u("plaats", e.target.value)}
+                        style={{ width: "100%", padding: "14px 18px", borderRadius: R.md, border: `1.5px solid ${postcodeStatus === "found" ? C.green + "60" : C.border}`, fontSize: 15, fontFamily: F, color: C.text, background: postcodeStatus === "found" ? C.greenLight : C.white, outline: "none", boxSizing: "border-box", transition: "all 0.2s" }}
+                        onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}
+                        onBlur={e => { e.target.style.borderColor = postcodeStatus === "found" ? C.green + "60" : C.border; e.target.style.boxShadow = "none"; }}
+                      />
                     </div>
                   </>
                 )}
                 {step === 3 && (
                   <>
-                    <h3 style={{ fontFamily: F, fontWeight: 700, fontSize: 18, color: C.text, marginBottom: 20 }}>Documenten & Akkoord</h3>
-                    <p style={{ fontFamily: F, fontSize: 14, color: C.textSec, lineHeight: 1.6, marginBottom: 20 }}>Qredits vraagt de volgende documenten op (je kunt deze later aanleveren):</p>
-                    {[
-                      { k: "ondernemingsplan", l: "Ondernemingsplan (verplicht voor starters)" },
-                      { k: "jaarcijfers", l: "Recente jaarcijfers (voor bestaande bedrijven)" },
-                      { k: "financieelPlan", l: "Financieel plan met investeringsopzet" },
-                    ].map(d => (
-                      <label key={d.k} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: R.md, border: `1.5px solid ${form[d.k] ? C.green : C.border}`, background: form[d.k] ? C.greenLight : C.white, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
-                        <input type="checkbox" checked={form[d.k]} onChange={e => u(d.k, e.target.checked)} style={{ width: 18, height: 18, accentColor: C.green }} />
-                        <span style={{ fontFamily: F, fontSize: 14, color: C.text, fontWeight: 500 }}>{d.l}</span>
-                      </label>
-                    ))}
-                    <div style={{ marginTop: 20, padding: "16px 18px", borderRadius: R.md, background: C.orangeLight, border: `1.5px solid ${C.orange}30` }}>
+                    <h3 style={{ fontFamily: F, fontWeight: 700, fontSize: 18, color: C.text, marginBottom: 6 }}>Business Case & Documenten</h3>
+                    <p style={{ fontFamily: F, fontSize: 13, color: C.textSec, lineHeight: 1.6, marginBottom: 22 }}>Beschrijf je business case en upload de benodigde documenten voor je kredietaanvraag.</p>
+
+                    {/* Business Case Overview */}
+                    <div style={{ marginBottom: 22 }}>
+                      <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>Business Case Samenvatting <span style={{ color: C.orange }}>*</span></label>
+                      <p style={{ fontFamily: F, fontSize: 12, color: C.textTer, marginBottom: 8, lineHeight: 1.5 }}>
+                        Beschrijf in het kort: wat doet je bedrijf, waarvoor heb je het krediet nodig, en hoe ga je het terugbetalen? Dit helpt Qredits bij de beoordeling.
+                      </p>
+                      <textarea
+                        rows={6}
+                        value={form.businessCase || ""}
+                        onChange={e => u("businessCase", e.target.value)}
+                        placeholder={"Voorbeeld:\n\nMijn bedrijf [naam] is gespecialiseerd in [activiteit]. We zijn gevestigd in [plaats] en actief sinds [jaar].\n\nHet krediet van €[bedrag] willen we inzetten voor [doel, bijv. werkkapitaal, inventaris, uitbreiding].\n\nOnze verwachte maandelijkse omzet is €[bedrag], waarmee we de maandelijkse aflossing van €[bedrag] comfortabel kunnen dragen.\n\nDe investering zal leiden tot [verwachte resultaten, bijv. 30% omzetgroei, nieuwe klanten, efficiëntere operatie]."}
+                        style={{
+                          width: "100%", padding: "16px 18px", borderRadius: R.md,
+                          border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: F,
+                          color: C.text, background: C.white, outline: "none",
+                          resize: "vertical", lineHeight: 1.6, boxSizing: "border-box",
+                          minHeight: 160, transition: "all 0.2s",
+                        }}
+                        onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeGlow}`; }}
+                        onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+                      />
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                        <span style={{ fontFamily: F, fontSize: 11, color: C.textTer }}>Minimaal 100 tekens aanbevolen</span>
+                        <span style={{ fontFamily: F, fontSize: 11, color: (form.businessCase?.length || 0) >= 100 ? C.green : C.textTer, fontWeight: 600 }}>
+                          {form.businessCase?.length || 0} tekens {(form.businessCase?.length || 0) >= 100 && "✓"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: C.borderLight, margin: "8px 0 22px" }} />
+
+                    {/* Document Uploads */}
+                    <div style={{ fontFamily: F, fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 4 }}>Documenten uploaden</div>
+                    <p style={{ fontFamily: F, fontSize: 12, color: C.textTer, marginBottom: 16, lineHeight: 1.5 }}>Upload je ondernemingsplan / business case document. Toegestane formaten: PDF, DOC, DOCX, XLS, XLSX (max. 10MB per bestand).</p>
+
+                    <FileUpload
+                      label="Ondernemingsplan / Business Case document"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx"
+                      file={businessCaseFile}
+                      onFileChange={setBusinessCaseFile}
+                      hint="PDF, DOC, DOCX, XLS of XLSX · Max. 10MB"
+                    />
+
+                    <FileUpload
+                      label="Recente jaarcijfers (voor bestaande bedrijven)"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx"
+                      file={jaarcijfersFile}
+                      onFileChange={setJaarcijfersFile}
+                      hint="PDF, DOC, DOCX, XLS of XLSX · Max. 10MB · Optioneel voor starters"
+                    />
+
+                    <FileUpload
+                      label="Financieel plan met investeringsopzet"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx"
+                      file={financieelPlanFile}
+                      onFileChange={setFinancieelPlanFile}
+                      hint="PDF, DOC, DOCX, XLS of XLSX · Max. 10MB"
+                    />
+
+                    {/* Upload summary */}
+                    <div style={{ background: C.bg, borderRadius: R.md, padding: "14px 18px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ fontFamily: F, fontSize: 13, color: C.textSec }}>
+                        <span style={{ fontWeight: 700, color: C.text }}>{[businessCaseFile, jaarcijfersFile, financieelPlanFile].filter(Boolean).length}</span> van 3 documenten geüpload
+                      </div>
+                      <div style={{ flex: 1 }} />
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {[businessCaseFile, jaarcijfersFile, financieelPlanFile].map((f, i) => (
+                          <div key={i} style={{ width: 8, height: 8, borderRadius: 99, background: f ? C.green : C.borderLight, transition: "all 0.3s" }} />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Agreement */}
+                    <div style={{ padding: "16px 18px", borderRadius: R.md, background: C.orangeLight, border: `1.5px solid ${C.orange}30` }}>
                       <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}>
                         <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: 18, height: 18, accentColor: C.orange, marginTop: 2 }} />
                         <span style={{ fontFamily: F, fontSize: 13, color: C.text, lineHeight: 1.5 }}>
@@ -520,12 +931,24 @@ function AanvragenPage() {
                 )}
 
                 {/* Navigation */}
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 28 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 28, alignItems: "center" }}>
                   {step > 0 ? <Btn variant="white" onClick={() => setStep(step - 1)}>← Terug</Btn> : <div />}
                   {step < 3 ? (
                     <Btn onClick={() => setStep(step + 1)}>Volgende →</Btn>
                   ) : (
-                    <Btn variant="green" onClick={() => setSubmitted(true)} disabled={!agreed}>Aanvraag indienen ✓</Btn>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                      {(!agreed || !businessCaseFile || (form.businessCase?.length || 0) < 100) && (
+                        <div style={{ fontFamily: F, fontSize: 12, color: "#E53E3E", textAlign: "right", maxWidth: 320, lineHeight: 1.4 }}>
+                          {(form.businessCase?.length || 0) < 100 && "⚠ Business case samenvatting (min. 100 tekens) · "}
+                          {!businessCaseFile && "⚠ Business case document · "}
+                          {!agreed && "⚠ Akkoord met voorwaarden"}
+                        </div>
+                      )}
+                      <Btn variant="green" onClick={() => setSubmitted(true)}
+                        disabled={!agreed || !businessCaseFile || (form.businessCase?.length || 0) < 100}>
+                        Aanvraag indienen ✓
+                      </Btn>
+                    </div>
                   )}
                 </div>
               </Card>
@@ -537,22 +960,18 @@ function AanvragenPage() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
 //  VOORWAARDEN PAGE (Comprehensive User Agreement)
-// ═══════════════════════════════════════════════════════════════════════
 function VoorwaardenPage() {
   const sections = [
-    { title: "1. Definities", content: `In deze Gebruikersovereenkomst wordt verstaan onder:\n\n• "Platform": de website en applicatie van ViaViaCredits B.V., gevestigd te Amsterdam, ingeschreven bij de KvK onder nummer 91204837.\n• "Gebruiker": iedere natuurlijke of rechtspersoon die gebruik maakt van het Platform.\n• "Kredietverstrekker": Stichting Qredits Microfinanciering Nederland, gevestigd te Almelo.\n• "Kredietaanvraag": het verzoek van Gebruiker via het Platform om een krediet aan te vragen bij de Kredietverstrekker.\n• "Persoonsgegevens": alle gegevens die direct of indirect herleidbaar zijn tot een natuurlijk persoon.\n• "BKR": Bureau Krediet Registratie te Tiel.\n• "Intermediair": ViaViaCredits in haar rol als bemiddelaar tussen Gebruiker en Kredietverstrekker.` },
-    { title: "2. Toepasselijkheid", content: `2.1 Deze Gebruikersovereenkomst is van toepassing op elk gebruik van het Platform en alle diensten die ViaViaCredits aanbiedt.\n\n2.2 Door gebruik te maken van het Platform accepteert Gebruiker deze voorwaarden. Indien Gebruiker niet akkoord gaat, dient het gebruik van het Platform onmiddellijk te worden gestaakt.\n\n2.3 ViaViaCredits behoudt zich het recht voor deze voorwaarden te wijzigen. Wijzigingen worden ten minste 30 dagen voor inwerkingtreding aangekondigd via het Platform.\n\n2.4 Eventuele afwijkende voorwaarden van Gebruiker worden uitdrukkelijk van de hand gewezen.` },
-    { title: "3. Dienstverlening", content: `3.1 ViaViaCredits treedt op als Intermediair tussen Gebruiker en Qredits. ViaViaCredits verstrekt zelf geen kredieten.\n\n3.2 Het Platform stelt Gebruiker in staat om:\n  a) De mogelijkheden voor zakelijke financiering te verkennen;\n  b) Een indicatieve berekening te maken van kredietbedrag en maandlasten;\n  c) Een kredietaanvraag in te dienen die wordt doorgeleid naar Qredits;\n  d) De status van de aanvraag te volgen.\n\n3.3 De uiteindelijke kredietbeslissing wordt genomen door Qredits. ViaViaCredits geeft geen garantie op goedkeuring van een kredietaanvraag.\n\n3.4 Gebruik van het Platform is voor Gebruiker kosteloos. ViaViaCredits ontvangt een vergoeding van Qredits voor succesvol bemiddelde kredieten.` },
-    { title: "4. Verplichtingen Gebruiker", content: `4.1 Gebruiker garandeert dat alle verstrekte informatie juist, volledig en actueel is.\n\n4.2 Gebruiker is verplicht om:\n  a) Correcte persoons- en bedrijfsgegevens te verstrekken;\n  b) Wijzigingen in gegevens onverwijld door te geven;\n  c) Het Platform niet te gebruiken voor onrechtmatige doeleinden;\n  d) Geen valse of misleidende informatie te verstrekken.\n\n4.3 Het verstrekken van onjuiste informatie kan leiden tot afwijzing van de kredietaanvraag en eventuele juridische gevolgen.\n\n4.4 Gebruiker is zelf verantwoordelijk voor het veilig houden van inloggegevens en het voorkomen van ongeautoriseerd gebruik van het account.` },
-    { title: "5. Privacy & Gegevensverwerking", content: `5.1 ViaViaCredits verwerkt persoonsgegevens in overeenstemming met de Algemene Verordening Gegevensbescherming (AVG/GDPR) en de Uitvoeringswet AVG.\n\n5.2 De volgende categorieën persoonsgegevens worden verwerkt:\n  a) Identificatiegegevens (naam, geboortedatum, BSN);\n  b) Contactgegevens (adres, e-mail, telefoonnummer);\n  c) Bedrijfsgegevens (KVK-nummer, handelsnaam, rechtsvorm, sector);\n  d) Financiële gegevens (kredietbedrag, looptijd, doel);\n  e) Documenten (ondernemingsplan, jaarcijfers, financieel plan).\n\n5.3 Gegevens worden verwerkt voor:\n  a) Het verwerken en doorleiden van de kredietaanvraag naar Qredits;\n  b) Het uitvoeren van een BKR-toetsing (door Qredits);\n  c) Communicatie over de aanvraag;\n  d) Wettelijke verplichtingen (Wwft, belastingwetgeving).\n\n5.4 Gegevens worden niet gedeeld met derden anders dan Qredits, tenzij wettelijk verplicht.\n\n5.5 Persoonsgegevens worden bewaard zolang noodzakelijk voor het doel waarvoor ze zijn verzameld, met een maximum van 7 jaar na de laatste activiteit.\n\n5.6 Gebruiker heeft recht op inzage, rectificatie, verwijdering, beperking, overdraagbaarheid en bezwaar conform de AVG.` },
-    { title: "6. BKR-toetsing", content: `6.1 Door het indienen van een kredietaanvraag geeft Gebruiker toestemming aan Qredits om een toetsing uit te voeren bij het Bureau Krediet Registratie (BKR).\n\n6.2 Een negatieve BKR-registratie leidt niet automatisch tot afwijzing van de kredietaanvraag.\n\n6.3 Bij goedkeuring van het krediet wordt de lening geregistreerd bij het BKR.\n\n6.4 ViaViaCredits heeft zelf geen toegang tot BKR-gegevens.` },
-    { title: "7. Intellectueel Eigendom", content: `7.1 Alle intellectuele eigendomsrechten op het Platform, waaronder maar niet beperkt tot software, teksten, afbeeldingen, ontwerpen en merken, berusten bij ViaViaCredits.\n\n7.2 Het is Gebruiker niet toegestaan om zonder voorafgaande schriftelijke toestemming van ViaViaCredits enig onderdeel van het Platform te kopiëren, wijzigen, verspreiden of openbaar te maken.` },
-    { title: "8. Aansprakelijkheid", content: `8.1 ViaViaCredits is niet aansprakelijk voor:\n  a) Beslissingen van Qredits ten aanzien van kredietaanvragen;\n  b) Schade als gevolg van onjuiste of onvolledige informatie verstrekt door Gebruiker;\n  c) Technische storingen of onbeschikbaarheid van het Platform;\n  d) Schade als gevolg van ongeautoriseerd gebruik van het account van Gebruiker.\n\n8.2 De totale aansprakelijkheid van ViaViaCredits is beperkt tot het bedrag dat door haar aansprakelijkheidsverzekering wordt uitgekeerd.\n\n8.3 ViaViaCredits spant zich in om de juistheid van informatie op het Platform te waarborgen, maar geeft geen garanties.` },
-    { title: "9. Beëindiging", content: `9.1 Gebruiker kan het gebruik van het Platform op elk moment beëindigen.\n\n9.2 ViaViaCredits kan de toegang van Gebruiker tot het Platform opschorten of beëindigen indien:\n  a) Gebruiker handelt in strijd met deze voorwaarden;\n  b) Gebruiker onjuiste informatie heeft verstrekt;\n  c) Er een vermoeden bestaat van fraude of misbruik.\n\n9.3 Bij beëindiging blijven de verplichtingen uit deze overeenkomst die naar hun aard bestemd zijn om voort te duren, van kracht.` },
-    { title: "10. Toepasselijk Recht & Geschillen", content: `10.1 Op deze Gebruikersovereenkomst is Nederlands recht van toepassing.\n\n10.2 Geschillen worden voorgelegd aan de bevoegde rechter te Amsterdam.\n\n10.3 Alvorens een geschil aan de rechter voor te leggen, zullen partijen zich inspannen om het geschil in onderling overleg op te lossen.\n\n10.4 Voor klachten kan Gebruiker contact opnemen via klachten@viaviacredits.nl. ViaViaCredits streeft ernaar klachten binnen 10 werkdagen te behandelen.` },
-    { title: "11. Contactgegevens", content: `ViaViaCredits B.V.\nHerengracht 420\n1017 BZ Amsterdam\nNederland\n\nKvK: 91204837\nBTW: NL864752319B01\n\nE-mail: info@viaviacredits.nl\nTelefoon: 085 - 401 8800\n\nFunctionaris Gegevensbescherming: privacy@viaviacredits.nl\n\nLaatst bijgewerkt: 1 maart 2026` },
+    { title: "1. Definities", content: "\"Platform\": de website van ViaViaCredits B.V. (KvK 91204837, Amsterdam).\n\"Gebruiker\": iedere persoon die het Platform gebruikt.\n\"Kredietverstrekker\": Stichting Qredits Microfinanciering Nederland.\n\"BKR\": Bureau Krediet Registratie te Tiel." },
+    { title: "2. Toepasselijkheid", content: "2.1 Deze voorwaarden gelden voor elk gebruik van het Platform.\n2.2 Door gebruik accepteert Gebruiker deze voorwaarden.\n2.3 ViaViaCredits mag deze voorwaarden wijzigen met 30 dagen vooraankondiging." },
+    { title: "3. Dienstverlening", content: "3.1 ViaViaCredits bemiddelt tussen Gebruiker en Qredits en verstrekt zelf geen kredieten.\n3.2 De kredietbeslissing wordt genomen door Qredits. Geen garantie op goedkeuring.\n3.3 Gebruik van het Platform is kosteloos voor Gebruiker." },
+    { title: "4. Verplichtingen Gebruiker", content: "4.1 Gebruiker garandeert dat alle verstrekte informatie juist en volledig is.\n4.2 Onjuiste informatie kan leiden tot afwijzing en juridische gevolgen.\n4.3 Gebruiker is verantwoordelijk voor beveiliging van eigen inloggegevens." },
+    { title: "5. Privacy (AVG/GDPR)", content: "5.1 Verwerking conform AVG/GDPR.\n5.2 Verwerkte gegevens: identificatie, contact, bedrijfs-, financiele gegevens en documenten.\n5.3 Gegevens worden alleen gedeeld met Qredits, tenzij wettelijk verplicht.\n5.4 Bewaring max. 7 jaar. Recht op inzage, rectificatie en verwijdering." },
+    { title: "6. BKR-toetsing", content: "6.1 Gebruiker geeft toestemming voor BKR-toetsing door Qredits.\n6.2 Negatieve registratie leidt niet automatisch tot afwijzing.\n6.3 Bij goedkeuring wordt de lening bij het BKR geregistreerd." },
+    { title: "7. Aansprakelijkheid", content: "7.1 ViaViaCredits is niet aansprakelijk voor beslissingen van Qredits, onjuiste informatie van Gebruiker, of technische storingen.\n7.2 Totale aansprakelijkheid beperkt tot verzekeringsuitkering." },
+    { title: "8. Toepasselijk Recht", content: "8.1 Nederlands recht is van toepassing.\n8.2 Geschillen: bevoegde rechter te Amsterdam.\n8.3 Klachten: klachten@viaviacredits.nl (reactie binnen 10 werkdagen)." },
+    { title: "9. Contact", content: "ViaViaCredits B.V. | Herengracht 420, 1017 BZ Amsterdam\nKvK: 91204837 | BTW: NL864752319B01\ninfo@viaviacredits.nl | 085-401 8800\nPrivacy: privacy@viaviacredits.nl\n\nLaatst bijgewerkt: 1 maart 2026" },
   ];
 
   return (
@@ -581,9 +1000,7 @@ function VoorwaardenPage() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
 //  FAQ PAGE
-// ═══════════════════════════════════════════════════════════════════════
 function FAQPage() {
   const [openIdx, setOpenIdx] = useState(null);
   const items = [
@@ -624,9 +1041,7 @@ function FAQPage() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
 //  CONTACT PAGE
-// ═══════════════════════════════════════════════════════════════════════
 function ContactPage() {
   const [sent, setSent] = useState(false);
   return (
@@ -674,127 +1089,58 @@ function ContactPage() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
 //  SIMPLE PAGES (Products, How it Works, About)
-// ═══════════════════════════════════════════════════════════════════════
 function ProductenPage() {
   const { go } = useNav();
-  return (
-    <>
-      <Section style={{ paddingTop: 130, background: `linear-gradient(180deg, ${C.orangeLight}40, ${C.white})` }}>
-        <Container style={{ textAlign: "center", maxWidth: 600 }}>
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 style={{ fontFamily: F, fontWeight: 900, fontSize: 38, color: C.text, letterSpacing: "-0.04em", margin: "0 0 12px" }}>Onze producten</h1>
-            <p style={{ fontFamily: F, fontSize: 17, color: C.textSec, lineHeight: 1.6 }}>Twee Qredits-producten, afgestemd op jouw fase als ondernemer. Van starter tot gevestigd MKB.</p>
-          </motion.div>
-        </Container>
-      </Section>
-      <Section>
-        <Container>
-          {[
-            { title: "Microkrediet", range: "€5.000 – €50.000", c: C.orange, icon: "🚀", desc: "Speciaal voor starters en kleine ondernemers. Met persoonlijke coaching en ondersteuning bij je ondernemingsplan.", specs: [["Bedrag", "€5K - €50K"], ["Looptijd", "12 - 120 mnd"], ["Rente", "Vanaf 5,75%"], ["Doelgroep", "Starters & ZZP"]], feats: ["Ondernemingsplan vereist", "Persoonlijke Qredits coach", "Coaching & trainingen inbegrepen", "Ook voor starters zonder track record"] },
-            { title: "MKB Krediet", range: "€50.000 – €500.000", c: C.green, icon: "📈", desc: "Voor gevestigde ondernemers die willen investeren in groei. Met Open Banking voor snelle beoordeling.", specs: [["Bedrag", "€50K - €500K"], ["Looptijd", "12 - 120 mnd"], ["Rente", "Vanaf 4,50%"], ["Doelgroep", "Gevestigd MKB"]], feats: ["Jaarcijfers meesturen", "Open Banking PSD2 integratie", "Flexibel aflossingsschema", "Vervroegd aflossen mogelijk"] },
-          ].map((p, i) => (
-            <motion.div key={i} {...fadeUp} style={{ display: "grid", gridTemplateColumns: i % 2 === 0 ? "1fr 1fr" : "1fr 1fr", gap: 40, alignItems: "center", marginBottom: 56 }}>
-              <div style={{ order: i % 2 === 0 ? 0 : 1 }}>
-                <span style={{ display: "inline-block", background: `${p.c}10`, color: p.c, borderRadius: R.full, padding: "5px 14px", fontSize: 12, fontWeight: 700, fontFamily: F, marginBottom: 14 }}>{p.title}</span>
-                <h2 style={{ fontFamily: F, fontWeight: 800, fontSize: 30, color: C.text, letterSpacing: "-0.03em", margin: "0 0 10px" }}>{p.range}</h2>
-                <p style={{ fontFamily: F, fontSize: 15, color: C.textSec, lineHeight: 1.65, marginBottom: 20 }}>{p.desc}</p>
-                {p.feats.map(f => <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontFamily: F, fontSize: 14, color: C.textSec }}><span style={{ color: C.green, fontWeight: 700 }}>✓</span>{f}</div>)}
-                <Btn onClick={() => go("aanvragen")} style={{ marginTop: 18, background: p.c }}>Aanvragen →</Btn>
-              </div>
-              <Card hover={false} style={{ padding: 32, background: `${p.c}04`, order: i % 2 === 0 ? 1 : 0 }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>{p.icon}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                  {p.specs.map(([l, v]) => (
-                    <div key={l}><div style={{ fontFamily: F, fontSize: 11, fontWeight: 600, color: C.textTer, textTransform: "uppercase", letterSpacing: "0.05em" }}>{l}</div><div style={{ fontFamily: F, fontSize: 16, fontWeight: 700, color: C.text, marginTop: 4 }}>{v}</div></div>
-                  ))}
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </Container>
-      </Section>
-    </>
-  );
+  return (<Section style={{ paddingTop: 130 }}><Container style={{ maxWidth: 700 }}>
+    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
+      <h1 style={{ fontFamily: F, fontWeight: 900, fontSize: 34, color: C.text, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 32 }}>Onze producten</h1>
+      {[{ t: "Microkrediet", r: "€5.000 – €50.000", c: C.orange, i: "🚀", f: ["Starters & ZZP", "12-120 mnd", "Vanaf 5,75%", "Coach inbegrepen"] },
+        { t: "MKB Krediet", r: "€50.000 – €500.000", c: C.green, i: "📈", f: ["Gevestigd MKB", "12-120 mnd", "Vanaf 4,50%", "Open Banking"] }].map((p, i) => (
+        <Card key={i} style={{ marginBottom: 20, display: "flex", gap: 24, alignItems: "center" }}>
+          <div style={{ fontSize: 40 }}>{p.i}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: F, fontWeight: 800, fontSize: 20, color: C.text }}>{p.t} <span style={{ color: p.c }}>{p.r}</span></div>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 8 }}>{p.f.map(f => <span key={f} style={{ fontFamily: F, fontSize: 13, color: C.textSec }}>✓ {f}</span>)}</div>
+          </div>
+          <Btn onClick={() => go("aanvragen")} style={{ background: p.c, flexShrink: 0 }}>Aanvragen</Btn>
+        </Card>))}
+    </motion.div></Container></Section>);
 }
 
 function HoeHetWerktPage() {
   const { go } = useNav();
-  return (
-    <>
-      <Section style={{ paddingTop: 130, background: `linear-gradient(180deg, ${C.greenLight}40, ${C.white})` }}>
-        <Container style={{ textAlign: "center", maxWidth: 560 }}>
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 style={{ fontFamily: F, fontWeight: 900, fontSize: 38, color: C.text, letterSpacing: "-0.04em", margin: "0 0 12px" }}>Hoe het werkt</h1>
-            <p style={{ fontFamily: F, fontSize: 17, color: C.textSec, lineHeight: 1.6 }}>Van eerste berekening tot geld op je rekening — volledig digitaal.</p>
-          </motion.div>
-        </Container>
-      </Section>
-      <Section>
-        <Container style={{ maxWidth: 700 }}>
-          {[
-            { n: "1", t: "Bereken je krediet", d: "Gebruik de calculator op onze homepage om het gewenste bedrag (€5K-€500K) en looptijd (12-120 maanden) te kiezen. Je ziet direct je geschatte maandlasten.", c: C.orange, i: "🧮" },
-            { n: "2", t: "Vul het aanvraagformulier in", d: "Vul je persoons- en bedrijfsgegevens in via ons 4-stappen formulier. KVK-nummer, doel van het krediet en contactinformatie.", c: C.green, i: "📋" },
-            { n: "3", t: "Qredits beoordeelt je aanvraag", d: "Je aanvraag wordt doorgeleid naar Qredits. Zij controleren je gegevens, voeren een BKR-toetsing uit en plannen een persoonlijk gesprek.", c: C.orange, i: "🔍" },
-            { n: "4", t: "Persoonlijk gesprek", d: "Een bedrijfsadviseur van Qredits bespreekt je plannen, situatie en mogelijkheden. Bij jou thuis, op de zaak of bij Qredits op kantoor.", c: C.green, i: "🤝" },
-            { n: "5", t: "Krediet op je rekening", d: "Bij goedkeuring wordt het geld overgemaakt. De eerste 3-6 maanden betaal je alleen rente, daarna start de aflossing.", c: C.orange, i: "💰" },
-          ].map((s, i) => (
-            <motion.div key={i} {...fadeUp} style={{ display: "flex", gap: 24, marginBottom: 36 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: `${s.c}10`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{s.i}</div>
-              <div>
-                <div style={{ fontFamily: F, fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 4 }}>Stap {s.n}: {s.t}</div>
-                <p style={{ fontFamily: F, fontSize: 14, color: C.textSec, lineHeight: 1.6 }}>{s.d}</p>
-              </div>
-            </motion.div>
-          ))}
-          <div style={{ textAlign: "center", marginTop: 20 }}><Btn size="lg" onClick={() => go("aanvragen")}>Start je aanvraag →</Btn></div>
-        </Container>
-      </Section>
-    </>
-  );
+  return (<Section style={{ paddingTop: 130 }}><Container style={{ maxWidth: 640 }}>
+    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
+      <h1 style={{ fontFamily: F, fontWeight: 900, fontSize: 34, color: C.text, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 32 }}>Hoe het werkt</h1>
+      {[{ n: "1", t: "Bereken je krediet", d: "Kies bedrag en looptijd met de calculator.", i: "🧮", c: C.orange },
+        { n: "2", t: "Vul je gegevens in", d: "Persoons- en bedrijfsgegevens via ons formulier.", i: "📋", c: C.green },
+        { n: "3", t: "Qredits beoordeelt", d: "BKR-toetsing en persoonlijk gesprek.", i: "🔍", c: C.orange },
+        { n: "4", t: "Krediet ontvangen", d: "Geld op je rekening na goedkeuring.", i: "💰", c: C.green }].map((s, i) => (
+        <div key={i} style={{ display: "flex", gap: 20, marginBottom: 28 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 14, background: `${s.c}10`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{s.i}</div>
+          <div><div style={{ fontFamily: F, fontWeight: 700, fontSize: 16, color: C.text }}>Stap {s.n}: {s.t}</div><p style={{ fontFamily: F, fontSize: 14, color: C.textSec, margin: "4px 0 0" }}>{s.d}</p></div>
+        </div>))}
+      <div style={{ textAlign: "center" }}><Btn size="lg" onClick={() => go("aanvragen")}>Start je aanvraag →</Btn></div>
+    </motion.div></Container></Section>);
 }
 
 function OverOnsPage() {
-  const { go } = useNav();
-  return (
-    <>
-      <Section style={{ paddingTop: 130, background: `linear-gradient(180deg, #FFF8F4 0%, ${C.white})` }}>
-        <Container style={{ textAlign: "center", maxWidth: 620 }}>
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 style={{ fontFamily: F, fontWeight: 900, fontSize: 38, color: C.text, letterSpacing: "-0.04em", margin: "0 0 12px" }}>Over ViaViaCredits</h1>
-            <p style={{ fontFamily: F, fontSize: 17, color: C.textSec, lineHeight: 1.6 }}>Wij geloven dat elke ondernemer met een goed idee toegang moet hebben tot financiering.</p>
-          </motion.div>
-        </Container>
-      </Section>
-      <Section>
-        <Container>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center" }}>
-            <motion.div {...fadeUp}>
-              <h2 style={{ fontFamily: F, fontWeight: 800, fontSize: 28, color: C.text, letterSpacing: "-0.03em", margin: "0 0 14px" }}>Onze missie</h2>
-              <p style={{ fontFamily: F, fontSize: 15, color: C.textSec, lineHeight: 1.7, marginBottom: 16 }}>ViaViaCredits maakt zakelijke financiering bereikbaar voor elke Nederlandse ondernemer. Als officieel Qredits intermediair verbinden wij jou met de juiste financieringsoplossing — digitaal, snel en transparant.</p>
-              <p style={{ fontFamily: F, fontSize: 15, color: C.textSec, lineHeight: 1.7 }}>Of je nu net begint met een stempkaart-app voor bakkerijen of een gevestigde horecazaak wilt uitbreiden — wij zorgen dat financiering geen drempel is maar een springplank.</p>
-            </motion.div>
-            <motion.div {...fadeUp}>
-              <Card hover={false} style={{ padding: 32 }}>
-                {[{ t: "Transparant", d: "Geen verborgen kosten." }, { t: "Snel", d: "Binnen 2 werkdagen reactie." }, { t: "Inclusief", d: "Ook starters welkom." }, { t: "Verantwoord", d: "We financieren alleen wat kan." }].map((v, i) => (
-                  <div key={i} style={{ display: "flex", gap: 12, marginBottom: i < 3 ? 18 : 0 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 8, background: C.greenLight, display: "flex", alignItems: "center", justifyContent: "center", color: C.green, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>✓</div>
-                    <div><div style={{ fontFamily: F, fontWeight: 700, fontSize: 14, color: C.text }}>{v.t}</div><div style={{ fontFamily: F, fontSize: 13, color: C.textSec }}>{v.d}</div></div>
-                  </div>
-                ))}
-              </Card>
-            </motion.div>
-          </div>
-        </Container>
-      </Section>
-    </>
-  );
+  return (<Section style={{ paddingTop: 130 }}><Container style={{ maxWidth: 640 }}>
+    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
+      <h1 style={{ fontFamily: F, fontWeight: 900, fontSize: 34, color: C.text, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 16 }}>Over ViaViaCredits</h1>
+      <p style={{ fontFamily: F, fontSize: 16, color: C.textSec, lineHeight: 1.7, textAlign: "center", marginBottom: 32 }}>ViaViaCredits maakt zakelijke financiering bereikbaar voor elke Nederlandse ondernemer. Als officieel Qredits intermediair verbinden wij jou met de juiste financieringsoplossing.</p>
+      <Card hover={false} style={{ padding: 28 }}>
+        {[{ t: "Transparant", d: "Geen verborgen kosten" }, { t: "Snel", d: "Binnen 2 werkdagen reactie" }, { t: "Inclusief", d: "Ook starters welkom" }, { t: "Verantwoord", d: "We financieren alleen wat kan" }].map((v, i) => (
+          <div key={i} style={{ display: "flex", gap: 12, marginBottom: i < 3 ? 14 : 0 }}>
+            <span style={{ color: C.green, fontWeight: 700 }}>✓</span>
+            <div><span style={{ fontFamily: F, fontWeight: 700, fontSize: 14, color: C.text }}>{v.t}</span> — <span style={{ fontFamily: F, fontSize: 14, color: C.textSec }}>{v.d}</span></div>
+          </div>))}
+      </Card>
+    </motion.div></Container></Section>);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
 //  APP SHELL
-// ═══════════════════════════════════════════════════════════════════════
 const pages = { home: HomePage, producten: ProductenPage, "hoe-het-werkt": HoeHetWerktPage, "over-ons": OverOnsPage, faq: FAQPage, contact: ContactPage, aanvragen: AanvragenPage, voorwaarden: VoorwaardenPage };
 
 export default function App() {
