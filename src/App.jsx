@@ -173,32 +173,59 @@ function Section({ children, bg = "transparent", style = {} }) { return <section
 function Navbar() {
   const { page, go } = useNav();
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { const h = () => setScrolled(window.scrollY > 20); window.addEventListener("scroll", h); return () => window.removeEventListener("scroll", h); }, []);
   const links = [{ id: "home", label: "Home" }, { id: "producten", label: "Producten" }, { id: "hoe-het-werkt", label: "Hoe het werkt" }, { id: "over-ons", label: "Over ons" }, { id: "faq", label: "FAQ" }, { id: "contact", label: "Contact" }];
+  const navGo = (id) => { go(id); setMobileOpen(false); };
   return (
-    <motion.header initial={{ y: -80 }} animate={{ y: 0 }} transition={{ duration: 0.5 }}
-      style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, padding: scrolled ? "10px 0" : "16px 0", background: scrolled ? `${C.white}F2` : "transparent", backdropFilter: scrolled ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${C.border}60` : "none", transition: "all 0.3s" }}>
-      <Container style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <motion.div whileHover={{ scale: 1.02 }} onClick={() => go("home")} style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: C.orange, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: SH.glow }}>
-            <span style={{ color: "#fff", fontWeight: 900, fontSize: 16, fontFamily: F }}>VV</span>
+    <>
+      <motion.header initial={{ y: -80 }} animate={{ y: 0 }} transition={{ duration: 0.5 }}
+        style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, padding: scrolled ? "10px 0" : "16px 0", background: scrolled || mobileOpen ? `${C.white}F2` : "transparent", backdropFilter: scrolled || mobileOpen ? "blur(16px)" : "none", borderBottom: scrolled ? `1px solid ${C.border}60` : "none", transition: "all 0.3s" }}>
+        <Container style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <motion.div whileHover={{ scale: 1.02 }} onClick={() => navGo("home")} style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: C.orange, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: SH.glow }}>
+              <span style={{ color: "#fff", fontWeight: 900, fontSize: 16, fontFamily: F }}>VV</span>
+            </div>
+            <span style={{ fontFamily: F, fontWeight: 800, fontSize: 19, color: C.text, letterSpacing: "-0.03em" }}>ViaVia<span style={{ color: C.orange }}>Credits</span></span>
+          </motion.div>
+          <nav className="nav-links" style={{ display: "flex", gap: 2 }}>
+            {links.map(l => (
+              <motion.button key={l.id} whileHover={{ color: C.orange }} onClick={() => go(l.id)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 14, fontWeight: page === l.id ? 700 : 500, color: page === l.id ? C.orange : C.textSec, padding: "8px 12px", borderRadius: R.sm, transition: "all 0.2s" }}>
+                {l.label}
+              </motion.button>
+            ))}
+          </nav>
+          <div className="nav-cta" style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={() => go("voorwaarden")} style={{ fontSize: 13 }}>Voorwaarden</Btn>
+            <Btn onClick={() => go("aanvragen")}>Krediet aanvragen</Btn>
           </div>
-          <span style={{ fontFamily: F, fontWeight: 800, fontSize: 19, color: C.text, letterSpacing: "-0.03em" }}>ViaVia<span style={{ color: C.orange }}>Credits</span></span>
-        </motion.div>
-        <nav style={{ display: "flex", gap: 2 }}>
-          {links.map(l => (
-            <motion.button key={l.id} whileHover={{ color: C.orange }} onClick={() => go(l.id)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 14, fontWeight: page === l.id ? 700 : 500, color: page === l.id ? C.orange : C.textSec, padding: "8px 12px", borderRadius: R.sm, transition: "all 0.2s" }}>
-              {l.label}
-            </motion.button>
-          ))}
-        </nav>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Btn variant="ghost" onClick={() => go("voorwaarden")} style={{ fontSize: 13 }}>Voorwaarden</Btn>
-          <Btn onClick={() => go("aanvragen")}>Krediet aanvragen</Btn>
-        </div>
-      </Container>
-    </motion.header>
+          {/* Mobile hamburger */}
+          <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}
+            style={{ display: "none", background: "none", border: "none", cursor: "pointer", padding: 8, fontSize: 22, color: C.text }}>
+            {mobileOpen ? "✕" : "☰"}
+          </button>
+        </Container>
+      </motion.header>
+      {/* Mobile menu overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            style={{ position: "fixed", top: 70, left: 0, right: 0, zIndex: 999, background: C.white, borderBottom: `1px solid ${C.border}`, boxShadow: SH.lg, padding: "16px 24px" }}>
+            {links.map(l => (
+              <div key={l.id} onClick={() => navGo(l.id)}
+                style={{ padding: "14px 0", borderBottom: `1px solid ${C.borderLight}`, fontFamily: F, fontSize: 16, fontWeight: page === l.id ? 700 : 500, color: page === l.id ? C.orange : C.text, cursor: "pointer" }}>
+                {l.label}
+              </div>
+            ))}
+            <div style={{ paddingTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+              <Btn full onClick={() => navGo("aanvragen")}>Krediet aanvragen</Btn>
+              <Btn full variant="outline" onClick={() => navGo("voorwaarden")}>Voorwaarden</Btn>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -207,7 +234,7 @@ function Footer() {
   return (
     <footer style={{ background: "#1A1A1A", padding: "64px 0 0" }}>
       <Container>
-        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: 40, paddingBottom: 48, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: 40, paddingBottom: 48, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 16 }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: C.orange, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -231,7 +258,7 @@ function Footer() {
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "20px 0", fontFamily: F, fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
+        <div className="footer-bottom" style={{ display: "flex", justifyContent: "space-between", padding: "20px 0", fontFamily: F, fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
           <span>© 2026 ViaViaCredits B.V. · KvK 91204837 · Erkend Qredits Intermediair</span>
           <div style={{ display: "flex", gap: 20 }}>{["🔒 256-bit SSL", "🏛 Qredits Partner", "🇪🇺 GDPR", "🏦 PSD2"].map(b => <span key={b}>{b}</span>)}</div>
         </div>
@@ -259,7 +286,7 @@ function HomePage() {
       <Section style={{ paddingTop: 130, paddingBottom: 60, background: `linear-gradient(160deg, ${C.white} 0%, ${C.orangeLight}40 50%, ${C.greenLight}20 100%)` }}>
         <div style={{ position: "absolute", top: -120, right: -150, width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, ${C.orange}08 0%, transparent 70%)`, pointerEvents: "none" }} />
         <Container>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.05fr", gap: 56, alignItems: "center" }}>
+          <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.05fr", gap: 56, alignItems: "center" }}>
             {/* LEFT — Banner */}
             <motion.div initial={{ opacity: 0, x: -36 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: C.greenLight, color: C.green, borderRadius: R.full, padding: "6px 14px", fontSize: 12, fontWeight: 700, fontFamily: F, marginBottom: 20, letterSpacing: "0.02em" }}>
@@ -289,7 +316,7 @@ function HomePage() {
             </motion.div>
 
             {/* RIGHT — Calculator */}
-            <motion.div initial={{ opacity: 0, x: 36, scale: 0.97 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}>
+            <motion.div className="hero-right" initial={{ opacity: 0, x: 36, scale: 0.97 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}>
               <Card style={{ padding: "32px 28px", boxShadow: SH.lg, border: `1px solid ${C.border}` }} hover={false}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
                   <div>
@@ -344,7 +371,7 @@ function HomePage() {
       {/* ── Stats ── */}
       <Section style={{ padding: "48px 0" }}>
         <Container>
-          <motion.div {...stagger} style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+          <motion.div {...stagger} className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
             {[{ v: 45, p: "€", s: "M+", l: "Verstrekt", c: C.orange }, { v: 2800, s: "+", l: "Ondernemers", c: C.green }, { v: 4.8, s: "/5", l: "Beoordeling", c: C.orange }, { v: 2, s: " dagen", l: "Gem. doorlooptijd", c: C.green }].map((s, i) => (
               <motion.div key={i} {...stChild}><Card style={{ textAlign: "center", padding: "28px 16px" }}>
                 <div style={{ fontFamily: F, fontWeight: 900, fontSize: 34, color: s.c, letterSpacing: "-0.04em" }}><CountUp target={s.v} prefix={s.p || ""} suffix={s.s} /></div>
@@ -363,7 +390,7 @@ function HomePage() {
             <h2 style={{ fontFamily: F, fontWeight: 800, fontSize: "clamp(26px, 3.5vw, 38px)", color: C.text, letterSpacing: "-0.03em", margin: "0 0 10px" }}>De juiste financiering voor jou</h2>
             <p style={{ fontFamily: F, fontSize: 16, color: C.textSec, lineHeight: 1.6 }}>Twee producten via Qredits, afgestemd op jouw fase als ondernemer.</p>
           </motion.div>
-          <motion.div {...stagger} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <motion.div {...stagger} className="products-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             {[
               { title: "Microkrediet", range: "€5.000 – €50.000", term: "12 – 120 maanden", icon: "🚀", color: C.orange, features: ["Voor starters & ZZP'ers", "Ondernemingsplan vereist", "Persoonlijke Qredits coach", "Rente vanaf 5,75%"] },
               { title: "MKB Krediet", range: "€50.000 – €500.000", term: "12 – 120 maanden", icon: "📈", color: C.green, features: ["Voor gevestigde bedrijven", "Jaarcijfers meesturen", "Open Banking integratie", "Rente vanaf 4,50%"] },
@@ -396,7 +423,7 @@ function HomePage() {
             <div style={{ display: "inline-block", background: C.greenLight, color: C.green, borderRadius: R.full, padding: "6px 14px", fontSize: 12, fontWeight: 700, fontFamily: F, marginBottom: 14 }}>Hoe het werkt</div>
             <h2 style={{ fontFamily: F, fontWeight: 800, fontSize: "clamp(26px, 3.5vw, 38px)", color: C.text, letterSpacing: "-0.03em", margin: "0 0 10px" }}>In 3 stappen geregeld</h2>
           </motion.div>
-          <motion.div {...stagger} style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
+          <motion.div {...stagger} className="steps-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
             {[
               { n: "1", title: "Bereken & kies", desc: "Gebruik de calculator om je bedrag en looptijd te kiezen. Direct inzicht in je maandlasten.", icon: "🧮", c: C.orange },
               { n: "2", title: "Vul je gegevens in", desc: "Persoons- en bedrijfsgegevens, KVK-nummer en het doel van je investering.", icon: "📋", c: C.green },
@@ -686,7 +713,7 @@ function AanvragenPage() {
                             {kvkData.actief ? "● Actief" : "● Inactief"}
                           </span>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                           {[
                             { l: "KVK-nummer", v: form.kvk },
                             { l: "Rechtsvorm", v: kvkData.rechtsvorm === "bv" ? "Besloten Vennootschap (B.V.)" : kvkData.rechtsvorm === "vof" ? "Vennootschap onder firma (VOF)" : kvkData.rechtsvorm === "eenmanszaak" ? "Eenmanszaak" : kvkData.rechtsvorm === "stichting" ? "Stichting" : kvkData.rechtsvorm },
@@ -709,7 +736,7 @@ function AanvragenPage() {
                     {/* Remaining fields - some auto-filled */}
                     <Input label="Bedrijfsnaam (handelsnaam)" placeholder="Naam van je bedrijf" value={form.bedrijfsnaam} onChange={e => u("bedrijfsnaam", e.target.value)} required
                       style={{ opacity: kvkStatus === "found" ? 0.7 : 1 }} />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <Select label="Rechtsvorm" value={form.rechtsvorm} onChange={e => u("rechtsvorm", e.target.value)} required options={[
                         { value: "", label: "Selecteer..." }, { value: "eenmanszaak", label: "Eenmanszaak" }, { value: "vof", label: "VOF" },
                         { value: "bv", label: "B.V." }, { value: "stichting", label: "Stichting" }, { value: "cv", label: "C.V." },
@@ -726,13 +753,13 @@ function AanvragenPage() {
                 {step === 2 && (
                   <>
                     <h3 style={{ fontFamily: F, fontWeight: 700, fontSize: 18, color: C.text, marginBottom: 20 }}>Persoonlijke gegevens</h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <Input label="Voornaam" placeholder="Je voornaam" value={form.voornaam} onChange={e => u("voornaam", e.target.value)} required />
                       <Input label="Achternaam" placeholder="Je achternaam" value={form.achternaam} onChange={e => u("achternaam", e.target.value)} required />
                     </div>
 
                     {/* Email with validation */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <div style={{ marginBottom: 18 }}>
                         <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>E-mailadres <span style={{ color: C.orange }}>*</span></label>
                         <div style={{ position: "relative" }}>
@@ -764,7 +791,7 @@ function AanvragenPage() {
                       </div>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <DateInput label="Geboortedatum" value={form.geboortedatum} onChange={e => u("geboortedatum", e.target.value)} required max="2008-01-01" min="1940-01-01" />
 
                       {/* BSN - digits only, exactly 9 */}
@@ -784,7 +811,7 @@ function AanvragenPage() {
                     </div>
 
                     {/* Postcode with auto-lookup → Straat & Plaats */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.6fr", gap: 12 }}>
+                    <div className="form-row-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.6fr", gap: 12 }}>
                       <div style={{ marginBottom: 18 }}>
                         <label style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: C.textSec, marginBottom: 6 }}>Postcode <span style={{ color: C.orange }}>*</span></label>
                         <div style={{ position: "relative" }}>
@@ -1047,7 +1074,7 @@ function ContactPage() {
   return (
     <Section style={{ paddingTop: 130, minHeight: "80vh" }}>
       <Container>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 40 }}>
+        <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 40 }}>
           <motion.div {...fadeUp}>
             <h1 style={{ fontFamily: F, fontWeight: 900, fontSize: 34, color: C.text, letterSpacing: "-0.03em", margin: "0 0 12px" }}>Neem contact op</h1>
             <p style={{ fontFamily: F, fontSize: 16, color: C.textSec, lineHeight: 1.6, marginBottom: 32 }}>Onze adviseurs staan voor je klaar.</p>
@@ -1157,6 +1184,36 @@ export default function App() {
         ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#d4d4d4;border-radius:99px}
         ::selection{background:${C.orangeGlow};color:${C.orange}}
         input:focus,textarea:focus,select:focus{outline:none;border-color:${C.orange}!important;box-shadow:0 0 0 3px ${C.orangeGlow}!important}
+        .hero-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:56px;align-items:center}
+        .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+        .products-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+        .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+        .footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .form-row-3{display:grid;grid-template-columns:1fr 1.2fr 0.5fr;gap:12px}
+        .form-row-addr{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+        .nav-links{display:flex;gap:2px}
+        .nav-cta{display:flex;gap:8px}
+        .footer-bottom{display:flex;justify-content:space-between;padding:20px 0}
+        .hero-left,.hero-right{min-width:0}
+        @media(max-width:768px){
+          .hero-grid{grid-template-columns:1fr!important;gap:32px!important}
+          .hero-right{order:-1}
+          .stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
+          .products-grid{grid-template-columns:1fr!important}
+          .steps-grid{grid-template-columns:1fr!important}
+          .footer-grid{grid-template-columns:1fr 1fr!important;gap:24px!important}
+          .form-row,.form-row-3,.form-row-addr{grid-template-columns:1fr!important}
+          .nav-links{display:none!important}
+          .nav-cta{display:none!important}
+          .mobile-menu-btn{display:block!important}
+          .footer-bottom{flex-direction:column;gap:12px;align-items:center;text-align:center}
+          section{padding:48px 0!important}
+        }
+        @media(max-width:480px){
+          .footer-grid{grid-template-columns:1fr!important}
+          .stats-grid{grid-template-columns:1fr 1fr!important}
+        }
       `}</style>
       <Ctx.Provider value={{ page, go }}>
         <Navbar />
